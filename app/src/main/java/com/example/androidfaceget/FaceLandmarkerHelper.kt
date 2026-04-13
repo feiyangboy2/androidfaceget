@@ -11,46 +11,52 @@ import com.google.mediapipe.framework.image.MPImage
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
-import com.google.mediapipe.tasks.vision.facedetector.FaceDetector
-import com.google.mediapipe.tasks.vision.facedetector.FaceDetectorResult
+import com.google.mediapipe.tasks.vision.facelandmarker.FaceLandmarker
+import com.google.mediapipe.tasks.vision.facelandmarker.FaceLandmarkerResult
 
-class FaceDetectorHelper(
+class FaceLandmarkerHelper(
     private val context: Context,
-    private val minDetectionConfidence: Float = DEFAULT_MIN_DETECTION_CONFIDENCE,
-    private val detectorListener: DetectorListener,
+    private val landmarkerListener: LandmarkerListener,
+    private val minFaceDetectionConfidence: Float = DEFAULT_FACE_DETECTION_CONFIDENCE,
+    private val minFacePresenceConfidence: Float = DEFAULT_FACE_PRESENCE_CONFIDENCE,
+    private val minTrackingConfidence: Float = DEFAULT_FACE_TRACKING_CONFIDENCE,
 ) {
-    private var faceDetector: FaceDetector? = null
+    private var faceLandmarker: FaceLandmarker? = null
 
     init {
-        setupFaceDetector()
+        setupFaceLandmarker()
     }
 
-    fun clearFaceDetector() {
-        faceDetector?.close()
-        faceDetector = null
+    fun clearFaceLandmarker() {
+        faceLandmarker?.close()
+        faceLandmarker = null
     }
 
-    fun setupFaceDetector() {
-        clearFaceDetector()
+    fun setupFaceLandmarker() {
+        clearFaceLandmarker()
 
         val baseOptions = BaseOptions.builder()
             .setDelegate(Delegate.CPU)
             .setModelAssetPath(MODEL_ASSET_NAME)
             .build()
 
-        val options = FaceDetector.FaceDetectorOptions.builder()
+        val options = FaceLandmarker.FaceLandmarkerOptions.builder()
             .setBaseOptions(baseOptions)
-            .setMinDetectionConfidence(minDetectionConfidence)
+            .setMinFaceDetectionConfidence(minFaceDetectionConfidence)
+            .setMinFacePresenceConfidence(minFacePresenceConfidence)
+            .setMinTrackingConfidence(minTrackingConfidence)
+            .setNumFaces(MAX_NUM_FACES)
+            .setOutputFacialTransformationMatrixes(true)
             .setRunningMode(RunningMode.LIVE_STREAM)
             .setResultListener(this::returnLiveStreamResult)
             .setErrorListener(this::returnLiveStreamError)
             .build()
 
         try {
-            faceDetector = FaceDetector.createFromOptions(context, options)
+            faceLandmarker = FaceLandmarker.createFromOptions(context, options)
         } catch (error: RuntimeException) {
-            Log.e(TAG, "Face detector failed to initialize.", error)
-            detectorListener.onError(error.message ?: "Face detector failed to initialize")
+            Log.e(TAG, "Face landmarker failed to initialize.", error)
+            landmarkerListener.onError(error.message ?: "Face landmarker failed to initialize")
         }
     }
 
@@ -91,20 +97,20 @@ class FaceDetectorHelper(
 
             detectAsync(BitmapImageBuilder(rotatedBitmap).build(), frameTime)
         } catch (error: RuntimeException) {
-            Log.e(TAG, "Face detection failed.", error)
-            detectorListener.onError(error.message ?: "Face detection failed")
+            Log.e(TAG, "Face landmarking failed.", error)
+            landmarkerListener.onError(error.message ?: "Face landmarking failed")
         } finally {
             imageProxy.close()
         }
     }
 
     private fun detectAsync(mpImage: MPImage, frameTime: Long) {
-        faceDetector?.detectAsync(mpImage, frameTime)
+        faceLandmarker?.detectAsync(mpImage, frameTime)
     }
 
-    private fun returnLiveStreamResult(result: FaceDetectorResult, input: MPImage) {
+    private fun returnLiveStreamResult(result: FaceLandmarkerResult, input: MPImage) {
         val inferenceTime = SystemClock.uptimeMillis() - result.timestampMs()
-        detectorListener.onResults(
+        landmarkerListener.onResults(
             ResultBundle(
                 result = result,
                 inferenceTimeMs = inferenceTime,
@@ -115,24 +121,28 @@ class FaceDetectorHelper(
     }
 
     private fun returnLiveStreamError(error: RuntimeException) {
-        detectorListener.onError(error.message ?: "Unknown MediaPipe error")
+        landmarkerListener.onError(error.message ?: "Unknown MediaPipe error")
     }
 
     data class ResultBundle(
-        val result: FaceDetectorResult,
+        val result: FaceLandmarkerResult,
         val inferenceTimeMs: Long,
         val inputImageHeight: Int,
         val inputImageWidth: Int,
     )
 
-    interface DetectorListener {
+    interface LandmarkerListener {
         fun onResults(resultBundle: ResultBundle)
         fun onError(error: String)
     }
 
     companion object {
-        private const val TAG = "FaceDetectorHelper"
-        private const val MODEL_ASSET_NAME = "face_detection_short_range.tflite"
-        private const val DEFAULT_MIN_DETECTION_CONFIDENCE = 0.5f
+        private const val TAG = "FaceLandmarkerHelper"
+        private const val MODEL_ASSET_NAME = "face_landmarker.task"
+        private const val DEFAULT_FACE_DETECTION_CONFIDENCE = 0.5f
+        private const val DEFAULT_FACE_PRESENCE_CONFIDENCE = 0.5f
+        private const val DEFAULT_FACE_TRACKING_CONFIDENCE = 0.5f
+        private const val MAX_NUM_FACES = 3
     }
 }
+

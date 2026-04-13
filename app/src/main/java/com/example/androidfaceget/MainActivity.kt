@@ -17,13 +17,13 @@ import androidx.core.content.ContextCompat
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class MainActivity : ComponentActivity(), FaceDetectorHelper.DetectorListener {
+class MainActivity : ComponentActivity(), FaceLandmarkerHelper.LandmarkerListener {
     private lateinit var previewView: PreviewView
     private lateinit var overlayView: OverlayView
     private lateinit var statusText: TextView
     private lateinit var switchCameraButton: Button
     private lateinit var cameraExecutor: ExecutorService
-    private lateinit var faceDetectorHelper: FaceDetectorHelper
+    private lateinit var faceLandmarkerHelper: FaceLandmarkerHelper
 
     private var cameraProvider: ProcessCameraProvider? = null
     private var lensFacing = CameraSelector.LENS_FACING_FRONT
@@ -47,9 +47,9 @@ class MainActivity : ComponentActivity(), FaceDetectorHelper.DetectorListener {
         switchCameraButton = findViewById(R.id.switchCameraButton)
 
         cameraExecutor = Executors.newSingleThreadExecutor()
-        faceDetectorHelper = FaceDetectorHelper(
+        faceLandmarkerHelper = FaceLandmarkerHelper(
             context = this,
-            detectorListener = this,
+            landmarkerListener = this,
         )
 
         switchCameraButton.setOnClickListener {
@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity(), FaceDetectorHelper.DetectorListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        faceDetectorHelper.clearFaceDetector()
+        faceLandmarkerHelper.clearFaceLandmarker()
         cameraExecutor.shutdown()
     }
 
@@ -106,7 +106,7 @@ class MainActivity : ComponentActivity(), FaceDetectorHelper.DetectorListener {
             .build()
             .also { analysis ->
                 analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                    faceDetectorHelper.detectLiveStreamFrame(
+                    faceLandmarkerHelper.detectLiveStreamFrame(
                         imageProxy = imageProxy,
                         mirrorFrontCamera = lensFacing == CameraSelector.LENS_FACING_FRONT,
                     )
@@ -123,15 +123,29 @@ class MainActivity : ComponentActivity(), FaceDetectorHelper.DetectorListener {
         }
     }
 
-    override fun onResults(resultBundle: FaceDetectorHelper.ResultBundle) {
+    override fun onResults(resultBundle: FaceLandmarkerHelper.ResultBundle) {
         runOnUiThread {
-            val faceCount = resultBundle.result.detections().size
+            val faceCount = resultBundle.result.faceLandmarks().size
+            val poses = resultBundle.result
+                .facialTransformationMatrixes()
+                .orElse(emptyList())
+                .map { matrix ->
+                    FacePoseEstimator.fromMatrix(
+                        matrix = matrix,
+                        mirrorFrontCamera = lensFacing == CameraSelector.LENS_FACING_FRONT,
+                    )
+                }
+
             overlayView.setResults(
                 result = resultBundle.result,
                 imageWidth = resultBundle.inputImageWidth,
                 imageHeight = resultBundle.inputImageHeight,
+                poses = poses,
             )
-            statusText.text = "Faces: $faceCount  ${resultBundle.inferenceTimeMs} ms"
+
+            val poseLabel = poses.firstOrNull()?.orientation?.label
+                ?: if (faceCount == 0) "无" else FaceOrientation.UNKNOWN.label
+            statusText.text = "Faces: $faceCount  Pose: $poseLabel  ${resultBundle.inferenceTimeMs} ms"
         }
     }
 
@@ -142,4 +156,3 @@ class MainActivity : ComponentActivity(), FaceDetectorHelper.DetectorListener {
         }
     }
 }
-
