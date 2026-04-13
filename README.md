@@ -21,10 +21,9 @@ Android realtime face detection demo using CameraX and MediaPipe Tasks Vision.
 
 Open this folder in Android Studio and sync Gradle, then run the `app` configuration.
 
-This project does not include a Gradle wrapper. If you prefer wrapper builds, generate one locally:
+The project includes Gradle wrapper `8.7`, so Android Studio should use the project wrapper during sync. For command-line checks:
 
 ```bash
-gradle wrapper
 ./gradlew :app:assembleDebug
 ```
 
@@ -33,4 +32,3 @@ gradle wrapper
 - MediaPipe Face Detector Android docs: https://ai.google.dev/edge/mediapipe/solutions/vision/face_detector/android
 - MediaPipe Android sample: https://github.com/google-ai-edge/mediapipe-samples/tree/main/examples/face_detector/android
 - CameraX docs: https://developer.android.com/media/camera/camerax
-

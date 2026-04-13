@@ -29,8 +29,8 @@ Camera permission denial updates the status label and does not start camera bind
 
 ## Dependencies
 
-- Android Gradle Plugin `8.13.2`
-- Kotlin Android plugin `2.2.21`
-- CameraX `1.6.0`
+- Android Gradle Plugin `8.6.1`
+- Gradle wrapper `8.7`
+- Kotlin Android plugin `2.0.21`
+- CameraX `1.4.2`
 - MediaPipe Tasks Vision `0.10.33`
-

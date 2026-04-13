@@ -25,11 +25,11 @@ Create repositories for `google`, `mavenCentral`, and `gradlePluginPortal`; incl
 
 - [x] **Step 2: Add Android/Kotlin plugins**
 
-Use `com.android.application` `8.13.2` and `org.jetbrains.kotlin.android` `2.2.21`.
+Use `com.android.application` `8.6.1` and `org.jetbrains.kotlin.android` `2.0.21`.
 
 - [x] **Step 3: Add app dependencies**
 
-Add CameraX `1.6.0`, MediaPipe Tasks Vision `0.10.33`, AndroidX Activity/Core/Lifecycle, and JUnit `4.13.2`.
+Add CameraX `1.4.2`, MediaPipe Tasks Vision `0.10.33`, AndroidX Activity/Core/Lifecycle, and JUnit `4.13.2`.
 
 ### Task 2: UI and Manifest
 
